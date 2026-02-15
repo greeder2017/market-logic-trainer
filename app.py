@@ -168,12 +168,22 @@ with col1:
             warnings.append("No liquidity sweep below lows detected.")
 
         if warnings:
-            st.warning("⚠️ Entry Warning:")
-            for w in warnings:
-                st.write("- " + w)
+            st.session_state.buy_warnings = warnings
         else:
             st.session_state.position = "LONG"
             st.session_state.entry_price = chart_data["Close"].iloc[-1]
+
+# Show stored BUY warnings
+if "buy_warnings" in st.session_state and st.session_state.buy_warnings:
+    st.warning("⚠️ Entry Warning:")
+    for w in st.session_state.buy_warnings:
+        st.write("- " + w)
+
+    if st.button("Continue LONG Anyway"):
+        st.session_state.position = "LONG"
+        st.session_state.entry_price = chart_data["Close"].iloc[-1]
+        st.session_state.buy_warnings = []
+
 
 with col2:
     if st.button("SELL"):
