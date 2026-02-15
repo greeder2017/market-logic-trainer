@@ -1,196 +1,177 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
+node -v
+npm -v
+npm create vite@latest market-terminal -- --template react
+cd market-terminal
+npm install
+npm install lightweight-charts react-resizable
+market-terminal/src/App.jsx
+import React, { useEffect, useRef, useState } from "react";
+import { createChart } from "lightweight-charts";
+import "./App.css";
 
-# -------------------------------------------------
-# PAGE CONFIG
-# -------------------------------------------------
-st.set_page_config(layout="wide")
-st.title("Market Logic Trainer")
+export default function App() {
+  const chartContainerRef = useRef();
+  const [rightWidth, setRightWidth] = useState(300);
 
-# -------------------------------------------------
-# DARK TERMINAL STYLE
-# -------------------------------------------------
-st.markdown("""
-<style>
-body { background-color: #0e1117; }
-.stApp { background-color: #0e1117; color: #e6e6e6; }
-h1, h2, h3, h4 { color: #ffffff; }
-</style>
-""", unsafe_allow_html=True)
+  useEffect(() => {
+    const chart = createChart(chartContainerRef.current, {
+      layout: {
+        background: { color: "#0e1117" },
+        textColor: "#d1d4dc",
+      },
+      grid: {
+        vertLines: { color: "#1e222d" },
+        horzLines: { color: "#1e222d" },
+      },
+      width: chartContainerRef.current.clientWidth,
+      height: chartContainerRef.current.clientHeight,
+    });
 
-# -------------------------------------------------
-# DATA GENERATION
-# -------------------------------------------------
-@st.cache_data
-def generate_data():
-    np.random.seed(1)
-    price = 100
-    prices = []
-    for i in range(500):
-        drift = 0.02
-        shock = np.random.randn() * 0.5
-        price += drift + shock
-        prices.append(price)
-    return pd.DataFrame({"Close": prices})
+    const candleSeries = chart.addCandlestickSeries();
 
-df = generate_data()
+    const data = [];
+    let price = 100;
 
-# -------------------------------------------------
-# REPLAY
-# -------------------------------------------------
-step = st.slider("Replay Candle", 20, len(df), 150)
-chart_data = df.iloc[:step]
-current_price = chart_data["Close"].iloc[-1]
+    for (let i = 0; i < 200; i++) {
+      const open = price;
+      const close = open + (Math.random() - 0.5) * 4;
+      const high = Math.max(open, close) + Math.random() * 2;
+      const low = Math.min(open, close) - Math.random() * 2;
 
-# -------------------------------------------------
-# STRUCTURE DETECTION
-# -------------------------------------------------
-lookback = 3
+      data.push({
+        time: i,
+        open,
+        high,
+        low,
+        close,
+      });
 
-def detect_structure(data):
-    highs = []
-    lows = []
-    for i in range(lookback, len(data)-lookback):
-        window = data["Close"][i-lookback:i+lookback+1]
-        if data["Close"][i] == max(window):
-            highs.append((i, data["Close"][i]))
-        if data["Close"][i] == min(window):
-            lows.append((i, data["Close"][i]))
-    return highs, lows
+      price = close;
+    }
 
-swings_high, swings_low = detect_structure(chart_data)
+    candleSeries.setData(data);
 
-bias = "RANGE"
-if len(swings_high) >= 2 and len(swings_low) >= 2:
-    if swings_high[-1][1] > swings_high[-2][1] and swings_low[-1][1] > swings_low[-2][1]:
-        bias = "BULLISH"
-    elif swings_high[-1][1] < swings_high[-2][1] and swings_low[-1][1] < swings_low[-2][1]:
-        bias = "BEARISH"
+    window.addEventListener("resize", () => {
+      chart.applyOptions({
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
+      });
+    });
 
-# -------------------------------------------------
-# LIQUIDITY DETECTION
-# -------------------------------------------------
-tolerance = 1.0
-liquidity_highs = []
-liquidity_lows = []
+    return () => chart.remove();
+  }, []);
 
-if len(swings_high) >= 2:
-    if abs(swings_high[-1][1] - swings_high[-2][1]) < tolerance:
-        liquidity_highs.append(swings_high[-1][1])
+  return (
+    <div className="app">
+      <div className="top-bar">
+        MARKET LOGIC TERMINAL
+      </div>
 
-if len(swings_low) >= 2:
-    if abs(swings_low[-1][1] - swings_low[-2][1]) < tolerance:
-        liquidity_lows.append(swings_low[-1][1])
+      <div className="main">
+        <div className="chart-area" ref={chartContainerRef} />
 
-# -------------------------------------------------
-# SWEEP DETECTION
-# -------------------------------------------------
-sweep_high = liquidity_highs and current_price >= liquidity_highs[-1]
-sweep_low = liquidity_lows and current_price <= liquidity_lows[-1]
+        <div
+          className="right-panel"
+          style={{ width: rightWidth }}
+        >
+          <div className="panel-section">
+            <h3>Structure</h3>
+            <p>Bias: BULLISH</p>
+            <p>Swings: 5 / 4</p>
+          </div>
 
-# -------------------------------------------------
-# SESSION STATE INIT
-# -------------------------------------------------
-if "position" not in st.session_state:
-    st.session_state.position = None
-    st.session_state.entry_price = None
-    st.session_state.entry_bias = None
-    st.session_state.entry_sweep_high = False
-    st.session_state.entry_sweep_low = False
+          <div className="panel-section">
+            <h3>Liquidity</h3>
+            <p>Equal High: ❌</p>
+            <p>Equal Low: ✅</p>
+          </div>
 
-# -------------------------------------------------
-# LANDSCAPE LAYOUT
-# -------------------------------------------------
-st.markdown("---")
-left, right = st.columns([4,1])
+          <div className="panel-section">
+            <h3>Trade Panel</h3>
+            <button>BUY</button>
+            <button>SELL</button>
+          </div>
 
-# ---------------- LEFT: CHART ----------------
-with left:
-    st.subheader("Price Chart")
-    st.line_chart(chart_data["Close"])
+          <div className="panel-section">
+            <h3>Positions</h3>
+            <p>No open positions</p>
+          </div>
+        </div>
+      </div>
 
-# ---------------- RIGHT: CONTROL PANEL ----------------
-with right:
+      <div className="bottom-dock">
+        <div>Positions</div>
+        <div>Orders</div>
+        <div>Journal</div>
+        <div>Performance</div>
+      </div>
+    </div>
+  );
+}
+market-terminal/src/App.css
+body {
+  margin: 0;
+  background: #0e1117;
+  color: #d1d4dc;
+  font-family: Arial, sans-serif;
+}
 
-    with st.expander("📊 Structure", expanded=True):
-        st.write(f"Bias: **{bias}**")
-        st.write(f"Swing Highs: {len(swings_high)}")
-        st.write(f"Swing Lows: {len(swings_low)}")
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-    with st.expander("📍 Liquidity"):
-        st.write(f"Equal Highs: {'✅' if liquidity_highs else '❌'}")
-        st.write(f"Equal Lows: {'✅' if liquidity_lows else '❌'}")
-        if sweep_high:
-            st.write("High Swept 🚨")
-        if sweep_low:
-            st.write("Low Swept 🚨")
+.top-bar {
+  padding: 10px;
+  background: #161a23;
+  font-weight: bold;
+  border-bottom: 1px solid #1e222d;
+}
 
-    with st.expander("💰 Trade Panel", expanded=True):
+.main {
+  display: flex;
+  flex: 1;
+}
 
-        buy_col, sell_col = st.columns(2)
+.chart-area {
+  flex: 1;
+}
 
-        with buy_col:
-            if st.button("BUY"):
-                st.session_state.position = "LONG"
-                st.session_state.entry_price = current_price
-                st.session_state.entry_bias = bias
-                st.session_state.entry_sweep_high = sweep_high
-                st.session_state.entry_sweep_low = sweep_low
+.right-panel {
+  background: #161a23;
+  border-left: 1px solid #1e222d;
+  padding: 10px;
+  overflow-y: auto;
+}
 
-        with sell_col:
-            if st.button("SELL"):
-                st.session_state.position = "SHORT"
-                st.session_state.entry_price = current_price
-                st.session_state.entry_bias = bias
-                st.session_state.entry_sweep_high = sweep_high
-                st.session_state.entry_sweep_low = sweep_low
+.panel-section {
+  margin-bottom: 20px;
+}
 
-        if st.session_state.position:
-            pnl = (
-                current_price - st.session_state.entry_price
-                if st.session_state.position == "LONG"
-                else st.session_state.entry_price - current_price
-            )
+.panel-section h3 {
+  margin-top: 0;
+}
 
-            st.write(f"Position: {st.session_state.position}")
-            st.write(f"Entry: {st.session_state.entry_price:.2f}")
-            st.write(f"Unrealized PnL: {pnl:.2f}")
+.panel-section button {
+  margin-right: 5px;
+  background: #2962ff;
+  border: none;
+  color: white;
+  padding: 6px 10px;
+  cursor: pointer;
+}
 
-    with st.expander("📊 Trade Evaluation", expanded=True):
+.bottom-dock {
+  display: flex;
+  background: #161a23;
+  border-top: 1px solid #1e222d;
+}
 
-        if st.button("CLOSE TRADE") and st.session_state.position:
-
-            quality = "LOW"
-
-            if st.session_state.entry_bias == "BULLISH" and st.session_state.entry_sweep_low:
-                quality = "HIGH"
-            elif st.session_state.entry_bias == "BEARISH" and st.session_state.entry_sweep_high:
-                quality = "HIGH"
-            elif st.session_state.entry_bias in ["BULLISH", "BEARISH"]:
-                quality = "MEDIUM"
-
-            st.success("Trade Closed")
-            st.write(f"Trade Quality: **{quality}**")
-
-            st.session_state.position = None
-            st.session_state.entry_price = None
-
-# -------------------------------------------------
-# BOTTOM TABS
-# -------------------------------------------------
-st.markdown("---")
-tab1, tab2, tab3 = st.tabs(["Positions", "Orders", "Session Stats"])
-
-with tab1:
-    if st.session_state.position:
-        st.write("Active Position:")
-        st.write(st.session_state.position)
-    else:
-        st.write("No open positions.")
-
-with tab2:
-    st.write("Order tracking coming soon.")
-
-with tab3:
-    st.write("Session performance analytics coming soon.")
+.bottom-dock div {
+  padding: 10px;
+  border-right: 1px solid #1e222d;
+  cursor: pointer;
+}
+npm run dev
+http://localhost:5173
