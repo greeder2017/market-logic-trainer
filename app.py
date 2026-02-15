@@ -233,10 +233,25 @@ if st.session_state.position:
 
     st.write(f"Unrealized PnL: {pnl:.2f}")
 
-if st.button("CLOSE TRADE"):
+if st.button("CLOSE TRADE") and st.session_state.position:
+
+    quality = "LOW"
+
+    if st.session_state.entry_bias == "BULLISH" and st.session_state.entry_sweep_low:
+        quality = "HIGH"
+
+    elif st.session_state.entry_bias == "BEARISH" and st.session_state.entry_sweep_high:
+        quality = "HIGH"
+
+    elif st.session_state.entry_bias in ["BULLISH", "BEARISH"]:
+        quality = "MEDIUM"
+
+    st.success("Trade closed")
+    st.write(f"Trade Quality: **{quality}**")
+
     st.session_state.position = None
     st.session_state.entry_price = None
-    st.success("Trade closed")
+
 
 st.subheader("Evaluation")
 st.info("Next: Liquidity detection + entry validation")
