@@ -117,23 +117,36 @@ if len(swings_high) >= 2 and len(swings_low) >= 2:
     elif swings_high[-1][1] < swings_high[-2][1] and swings_low[-1][1] < swings_low[-2][1]:
         bias = "BEARISH"
 
-st.subheader("Structure Panel")
-st.subheader("Liquidity Panel")
+st.markdown("---")
+st.subheader("Market Analysis")
 
-if liquidity_highs:
-    st.write("Equal Highs Detected ✅")
-else:
-    st.write("Equal Highs Detected ❌")
+colA, colB = st.columns(2)
 
-if liquidity_lows:
-    st.write("Equal Lows Detected ✅")
-else:
-    st.write("Equal Lows Detected ❌")
-if sweep_high:
-    st.write("Liquidity HIGH Swept 🚨")
+with colA:
+    st.markdown("### Structure")
+    st.write(f"Bias: **{bias}**")
+    st.write(f"Swing Highs: {len(swings_high)}")
+    st.write(f"Swing Lows: {len(swings_low)}")
 
-if sweep_low:
-    st.write("Liquidity LOW Swept 🚨")
+with colB:
+    st.markdown("### Liquidity")
+
+    if liquidity_highs:
+        st.write("Equal Highs: ✅")
+    else:
+        st.write("Equal Highs: ❌")
+
+    if liquidity_lows:
+        st.write("Equal Lows: ✅")
+    else:
+        st.write("Equal Lows: ❌")
+
+    if sweep_high:
+        st.write("High Swept: 🚨")
+
+    if sweep_low:
+        st.write("Low Swept: 🚨")
+
 
 st.write(f"Current Bias: **{bias}**")
 st.write(f"Swing Highs Detected: {len(swings_high)}")
