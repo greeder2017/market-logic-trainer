@@ -4,8 +4,9 @@ import numpy as np
 
 st.set_page_config(layout="wide")
 
-st.title("Market Logic Trainer - Web Version")
+st.title("Market Logic Trainer - Structure Version")
 
+# --- Generate Simulated Market Data ---
 @st.cache_data
 def generate_data():
     np.random.seed(1)
@@ -23,11 +24,46 @@ def generate_data():
 
 df = generate_data()
 
+# --- Replay ---
 step = st.slider("Replay Candle", 20, len(df), 100)
 chart_data = df.iloc[:step]
 
 st.line_chart(chart_data["Close"])
 
+# --- Structure Detection ---
+lookback = 3
+
+def detect_structure(data):
+    swings_high = []
+    swings_low = []
+
+    for i in range(lookback, len(data)-lookback):
+        high_range = data["Close"][i-lookback:i+lookback+1]
+        if data["Close"][i] == max(high_range):
+            swings_high.append((i, data["Close"][i]))
+
+        if data["Close"][i] == min(high_range):
+            swings_low.append((i, data["Close"][i]))
+
+    return swings_high, swings_low
+
+swings_high, swings_low = detect_structure(chart_data)
+
+# --- Determine Bias ---
+bias = "RANGE"
+
+if len(swings_high) >= 2 and len(swings_low) >= 2:
+    if swings_high[-1][1] > swings_high[-2][1] and swings_low[-1][1] > swings_low[-2][1]:
+        bias = "BULLISH"
+    elif swings_high[-1][1] < swings_high[-2][1] and swings_low[-1][1] < swings_low[-2][1]:
+        bias = "BEARISH"
+
+st.subheader("Structure Panel")
+st.write(f"Current Bias: **{bias}**")
+st.write(f"Swing Highs Detected: {len(swings_high)}")
+st.write(f"Swing Lows Detected: {len(swings_low)}")
+
+# --- Trade Panel ---
 st.subheader("Trade Panel")
 
 col1, col2 = st.columns(2)
@@ -66,4 +102,4 @@ if st.button("CLOSE TRADE"):
     st.success("Trade closed")
 
 st.subheader("Evaluation")
-st.info("Structure + Liquidity logic coming next.")
+st.info("Next: Liquidity detection + entry validation")
