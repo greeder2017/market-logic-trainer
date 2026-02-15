@@ -28,7 +28,40 @@ df = generate_data()
 step = st.slider("Replay Candle", 20, len(df), 100)
 chart_data = df.iloc[:step]
 
-st.line_chart(chart_data["Close"])
+st.markdown("---")
+
+main_col1, main_col2 = st.columns([2,1])
+
+with main_col1:
+    st.subheader("Price Chart")
+    st.line_chart(chart_data["Close"])
+
+with main_col2:
+    st.subheader("Market Analysis")
+
+    st.markdown("### Structure")
+    st.write(f"Bias: **{bias}**")
+    st.write(f"Swing Highs: {len(swings_high)}")
+    st.write(f"Swing Lows: {len(swings_low)}")
+
+    st.markdown("### Liquidity")
+
+    if liquidity_highs:
+        st.write("Equal Highs: ✅")
+    else:
+        st.write("Equal Highs: ❌")
+
+    if liquidity_lows:
+        st.write("Equal Lows: ✅")
+    else:
+        st.write("Equal Lows: ❌")
+
+    if sweep_high:
+        st.write("High Swept: 🚨")
+
+    if sweep_low:
+        st.write("Low Swept: 🚨")
+
 
 # --- Structure Detection ---
 lookback = 3
