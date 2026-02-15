@@ -52,7 +52,7 @@ swings_high, swings_low = detect_structure(chart_data)
 liquidity_highs = []
 liquidity_lows = []
 
-tolerance = 0.2  # how close prices must be to count as equal
+tolerance = 1.0  # how close prices must be to count as equal
 
 if len(swings_high) >= 2:
     last_high = swings_high[-1][1]
@@ -147,16 +147,52 @@ col1, col2 = st.columns(2)
 if "position" not in st.session_state:
     st.session_state.position = None
     st.session_state.entry_price = None
+    
+# --- Trade Panel ---
+st.subheader("Trade Panel")
+
+col1, col2 = st.columns(2)
+
+if "position" not in st.session_state:
+    st.session_state.position = None
+    st.session_state.entry_price = None
 
 with col1:
     if st.button("BUY"):
-        st.session_state.position = "LONG"
-        st.session_state.entry_price = chart_data["Close"].iloc[-1]
+        warnings = []
+
+        if bias != "BULLISH":
+            warnings.append("Structure is not bullish.")
+
+        if not sweep_low:
+            warnings.append("No liquidity sweep below lows detected.")
+
+        if warnings:
+            st.warning("⚠️ Entry Warning:")
+            for w in warnings:
+                st.write("- " + w)
+        else:
+            st.session_state.position = "LONG"
+            st.session_state.entry_price = chart_data["Close"].iloc[-1]
 
 with col2:
     if st.button("SELL"):
-        st.session_state.position = "SHORT"
-        st.session_state.entry_price = chart_data["Close"].iloc[-1]
+        warnings = []
+
+        if bias != "BEARISH":
+            warnings.append("Structure is not bearish.")
+
+        if not sweep_high:
+            warnings.append("No liquidity sweep above highs detected.")
+
+        if warnings:
+            st.warning("⚠️ Entry Warning:")
+            for w in warnings:
+                st.write("- " + w)
+        else:
+            st.session_state.position = "SHORT"
+            st.session_state.entry_price = chart_data["Close"].iloc[-1]
+
 
 current_price = chart_data["Close"].iloc[-1]
 
