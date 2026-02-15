@@ -202,6 +202,9 @@ with col2:
         else:
             st.session_state.position = "SHORT"
             st.session_state.entry_price = chart_data["Close"].iloc[-1]
+            st.session_state.entry_bias = bias
+            st.session_state.entry_sweep_low = sweep_low
+            st.session_state.entry_sweep_high = sweep_high
 
 
 current_price = chart_data["Close"].iloc[-1]
