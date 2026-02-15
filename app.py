@@ -65,6 +65,31 @@ if len(swings_low) >= 2:
     prev_low = swings_low[-2][1]
     if abs(last_low - prev_low) < tolerance:
         liquidity_lows.append(last_low)
+if len(swings_low) >= 2:
+    last_low = swings_low[-1][1]
+    prev_low = swings_low[-2][1]
+    if abs(last_low - prev_low) < tolerance:
+        liquidity_lows.append(last_low)
+
+if len(swings_low) >= 2:
+    last_low = swings_low[-1][1]
+    prev_low = swings_low[-2][1]
+    if abs(last_low - prev_low) < tolerance:
+        liquidity_lows.append(last_low)
+
+# --- Sweep Detection ---
+sweep_high = False
+sweep_low = False
+
+current_price = chart_data["Close"].iloc[-1]
+
+if liquidity_highs:
+    if current_price > liquidity_highs[-1]:
+        sweep_high = True
+
+if liquidity_lows:
+    if current_price < liquidity_lows[-1]:
+        sweep_low = True
 
 liquidity_highs = []
 liquidity_lows = []
@@ -104,6 +129,11 @@ if liquidity_lows:
     st.write("Equal Lows Detected ✅")
 else:
     st.write("Equal Lows Detected ❌")
+if sweep_high:
+    st.write("Liquidity HIGH Swept 🚨")
+
+if sweep_low:
+    st.write("Liquidity LOW Swept 🚨")
 
 st.write(f"Current Bias: **{bias}**")
 st.write(f"Swing Highs Detected: {len(swings_high)}")
