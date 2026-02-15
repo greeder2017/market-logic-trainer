@@ -196,15 +196,27 @@ with col2:
             warnings.append("No liquidity sweep above highs detected.")
 
         if warnings:
-            st.warning("⚠️ Entry Warning:")
-            for w in warnings:
-                st.write("- " + w)
+            st.session_state.sell_warnings = warnings
         else:
             st.session_state.position = "SHORT"
             st.session_state.entry_price = chart_data["Close"].iloc[-1]
             st.session_state.entry_bias = bias
             st.session_state.entry_sweep_low = sweep_low
             st.session_state.entry_sweep_high = sweep_high
+
+# Show stored SELL warnings
+if "sell_warnings" in st.session_state and st.session_state.sell_warnings:
+    st.warning("⚠️ Entry Warning:")
+    for w in st.session_state.sell_warnings:
+        st.write("- " + w)
+
+    if st.button("Continue SHORT Anyway"):
+        st.session_state.position = "SHORT"
+        st.session_state.entry_price = chart_data["Close"].iloc[-1]
+        st.session_state.entry_bias = bias
+        st.session_state.entry_sweep_low = sweep_low
+        st.session_state.entry_sweep_high = sweep_high
+        st.session_state.sell_warnings = []
 
 
 current_price = chart_data["Close"].iloc[-1]
